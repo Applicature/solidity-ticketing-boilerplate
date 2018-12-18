@@ -1,0 +1,16 @@
+node_modules
+.idea
+coverage
+npm-debug.log
+package-lock.log
+package-lock.json
+*.iml
+*.ipr
+*.iws
+reports
+coverage.json
+build
+xunit.xml
+bridge.log
+scTopics
+coverageEnv

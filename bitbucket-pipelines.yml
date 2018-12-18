@@ -1,0 +1,47 @@
+image: node:carbon
+
+clone:
+  depth: full
+
+pipelines:
+  default:
+  - step:
+      caches:
+      - node
+      script:
+      - npm install
+      - npm run test:ci
+  - step:
+      name: Generate Coverage
+      trigger: manual
+      caches:
+      - node
+      script:
+      - npm run coverage
+  branches:
+    master:
+    - step:
+        name: Master Merged
+        deployment: test
+        caches:
+        - node
+        script:
+        - npm install
+        - npm run test:ci
+        - npm run coverage
+    - step:
+        name: Deploy to TestNet
+        trigger: manual
+        deployment: staging
+        caches:
+        - node
+        script:
+        - npm run migrate:testnet
+    - step:
+        name: Deploy to MainNet
+        trigger: manual
+        deployment: production
+        caches:
+        - node
+        script:
+        - npm run migrate:mainnet

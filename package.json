@@ -1,0 +1,71 @@
+{
+  "name": "smart-contract-templates",
+  "version": "1.0.0",
+  "description": "Smart Contract templates",
+  "homepage": "https://bitbucket.org/applicature/solidity.project-template#readme",
+  "license": "UNLICENSED",
+  "keywords": [
+    "solidity",
+    "ethereum",
+    "smart",
+    "contracts"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://bitbucket.org/applicature/solidity.smart-contract-templates.git"
+  },
+  "author": "Andrew Zubko <andrew@applicature.com>",
+  "engines": {
+    "node": ">=10.5.0"
+  },
+  "scripts": {
+    "ganache": "sh rpc.sh",
+    "eslint:js": "eslint .",
+    "eslint:js:fix": "eslint . --fix",
+    "console": "truffle console --network development",
+    "bridge": "node ../ethereum-bridge/bridge -a 9 -H 127.0.0.1 -p 9545 --dev",
+    "test": "truffle test",
+    "develop": "truffle develop",
+    "compile": " truffle compile",
+    "coverage": "./node_modules/.bin/solidity-coverage",
+    "migrate": " truffle migrate --network development",
+    "migrate:testnet": " truffle migrate --network rinkeby",
+    "migrate:mainnet": " truffle migrate --network rinkeby",
+    "solhint": "node ./node_modules/solhint/solhint.js contracts/*.sol",
+    "solium": "solium -d contracts/",
+    "precommit": "npm run coverage && npm run solium",
+    "test:ci": "./node_modules/.bin/run-with-ganache 'npm run coverage && npm run test' && npm run solium"
+  },
+  "directories": {
+    "test": "test"
+  },
+  "dependencies": {
+    "increase-version": "^1.0.4",
+    "run-with-ganache": "^0.1.1",
+    "solium-plugin-consensys": "0.0.0",
+    "truffle": "^4.1.14"
+  },
+  "devDependencies": {
+    "bignumber.js": "^4.1.0",
+    "chai": "^4.1.2",
+    "chai-as-promised": "^7.1.1",
+    "eslint": "^4.19.1",
+    "eslint-config-standard": "^10.2.1",
+    "eslint-plugin-import": "^2.13.0",
+    "eslint-plugin-node": "^5.2.1",
+    "eslint-plugin-promise": "^3.8.0",
+    "eslint-plugin-standard": "^3.1.0",
+    "eth-gas-reporter": "^0.1.10",
+    "ethereumjs-abi": "^0.6.5",
+    "ethereumjs-testrpc": "^6.0.3",
+    "husky": "^0.14.3",
+    "mocha": "^5.0.0",
+    "mocha-junit-reporter": "^1.17.0",
+    "mocha-multi-reporters": "^1.1.7",
+    "openzeppelin-solidity": "^1.12.0",
+    "solhint": "^1.4.1",
+    "solidity-coverage": "^0.5.0",
+    "solium": "^1.1.8",
+    "truffle-hdwallet-provider": "0.0.3"
+  }
+}
