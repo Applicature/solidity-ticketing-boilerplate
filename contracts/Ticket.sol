@@ -129,27 +129,6 @@ contract Ticket is ERC721Token, Managed {
         require(false, ERROR_ACCESS_DENIED);
     }
 
-    function safeTransferFrom(
-        address,
-        address,
-        uint256
-    )
-        public
-    {
-        require(false, ERROR_ACCESS_DENIED);
-    }
-
-    function safeTransferFrom(
-        address,
-        address,
-        uint256,
-        bytes
-    )
-        public
-    {
-        require(false, ERROR_ACCESS_DENIED);
-    }
-
     function isForResale(
         uint256 _ticketId
     )

@@ -1,4 +1,5 @@
 const utils = require("./utils");
+const BN = require("bn.js");
 
 const CAN_SELL_TICKETS = 0;
 const CAN_BURN_TICKETS = 4;
@@ -375,12 +376,11 @@ contract("Ticket", accounts => {
             await ticketInstance.transferFrom(accounts[1], accounts[0], 0, { from: accounts[1] })
                 .then(utils.receiptShouldFailed).catch(utils.catchReceiptShouldFailed);
 
-            // todo make failed
-            // await ticketInstance.safeTransferFrom(accounts[1], accounts[0], 0, { from: accounts[1] })
-            //     .then(utils.receiptShouldFailed).catch(utils.catchReceiptShouldFailed);
+            await ticketInstance.safeTransferFrom(accounts[1], accounts[0], 0, new BN(0), { from:accounts[1] })
+                .then(utils.receiptShouldFailed).catch(utils.catchReceiptShouldFailed);
 
-            // await ticketInstance.safeTransferFrom(accounts[1], accounts[0], 0, new BN(0), { from:accounts[1] })
-            //     .then(utils.receiptShouldFailed).catch(utils.catchReceiptShouldFailed);
+            await ticketInstance.safeTransferFrom(accounts[1], accounts[0], 0, { from: accounts[1] })
+                .then(utils.receiptShouldFailed).catch(utils.catchReceiptShouldFailed);
         });
     });
 

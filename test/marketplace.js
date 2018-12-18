@@ -5,6 +5,7 @@ const BN = require("bn.js");
 
 const CAN_SELL_TICKETS = 0;
 const CAN_MAKE_REFUND = 1;
+const CAN_UPDATE_CONCERT = 2;
 const CAN_BURN_TICKETS = 4;
 const CAN_SIGN_TRANSACTION = 5;
 const CAN_ADD_CONCERTS = 6;
@@ -437,6 +438,78 @@ contract("Marketplace", accounts => {
 
             marketplace = await Marketplace.new(0);
             await assert.equal(await marketplace.isInitialized.call(), false, "marketplace is initialized");
+        });
+    });
+
+    describe("check withdrawConcertFunds", () => {
+        it("should successfully withdraw funds", async () => {
+            await management.setPermission(marketplace.address, CAN_ADD_CONCERTS, true);
+            await management.setPermission(marketplace.address, CAN_SELL_TICKETS, true);
+            await management.setPermission(marketplace.address, CAN_MAKE_REFUND, true);
+            await management.setPermission(marketplace.address, CAN_BURN_TICKETS, true);
+            await management.setPermission(marketplace.address, CAN_UPDATE_CONCERT, true);
+            await management.registerContract(CONTRACT_MARKETPLACE, marketplace.address);
+            await management.registerContract(CONTRACT_CONCERT, concertInstance.address);
+
+            await assert.equal(await concertInstance.concertExists.call(0), false, "concert exists");
+            await assert.equal(await management.ticketRegistry.call(0), 0, "ticketInstance is defined");
+
+            await marketplace.addNewConcert("TICKET", "TKT", 100, concertStart).then(utils.receiptShouldSucceed);
+            await assert.equal(await concertInstance.concertExists.call(0), true, "concert does not exist");
+
+            const concert = await concertInstance.getConcert.call(0);
+
+            await assert.equal(concert.length, 5, "concert does not exist");
+
+            await assert.notEqual(await management.ticketRegistry.call(0), 0, "ticketInstance is not defined");
+
+            const signAddress = accounts[2];
+            await management.setPermission(signAddress, CAN_SIGN_TRANSACTION, true);
+
+            await makeTransaction(
+                marketplace,
+                0,
+                10,
+                100,
+                [1, 1, 1],
+                new BigNumber("0.5").mul(precision).valueOf(),
+                signAddress,
+                accounts[1]
+            ).then(utils.receiptShouldSucceed);
+
+            const ticketAddress = await management.ticketRegistry.call(0);
+            const ticketInstance = Ticket.at(ticketAddress);
+
+            assert.equal(await ticketInstance.ownerOf.call(0), accounts[1], "owner is not equal");
+            assert.equal(await concertInstance.getCollectedFundsTest.call(0),
+                new BigNumber("0.5e18").valueOf(), "collectedFunds is not equal");
+
+            await concertInstance.updateStartTime(0, parseInt(new Date().getTime() / 1000) - 3600)
+                .then(utils.receiptShouldSucceed);
+
+            await makeRefundTransaction(marketplace, 0, 0, 50, 100, signAddress, accounts[1])
+                .then(utils.receiptShouldFailed).catch(utils.catchReceiptShouldFailed);
+
+            assert.equal(await concertInstance.getCollectedFunds.call(0),
+                new BigNumber("0.5e18").valueOf(), "collectedFunds is not equal");
+
+            const previousMarketplaceBalance = await utils.getEtherBalance(marketplace.address).valueOf();
+            const previousConcertOwnerBalance = await utils.getEtherBalance(accounts[0]).valueOf();
+
+            let txCost;
+            await marketplace.withdrawConcertFunds(0)
+                .then((result) => (txCost = utils.getTxCost(result)));
+
+            assert.equal(await concertInstance.getCollectedFunds.call(0), 0, "collectedFunds is not equal");
+
+            const currentMarketplaceBalance = await utils.getEtherBalance(marketplace.address).valueOf();
+            const currentConcertOwnerBalance = await utils.getEtherBalance(accounts[0]).valueOf();
+
+            await assert.equal(new BigNumber(previousMarketplaceBalance).sub(0.5e18).valueOf(),
+                currentMarketplaceBalance, "concert eth balance is not equal");
+
+            await assert.equal(new BigNumber(previousConcertOwnerBalance).sub(txCost).add(0.5e18).valueOf(),
+                currentConcertOwnerBalance, "owner eth balance is not equal");
         });
     });
 });
