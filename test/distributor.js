@@ -2,8 +2,8 @@ const utils = require("./utils");
 const BigNumber = require("bignumber.js");
 
 const CAN_SELL_TICKETS = 0;
-const CAN_ADD_CONCERTS = 6;
-const CAN_DISTRIBUTE_FUNDS = 7;
+const CAN_ADD_CONCERTS = 5;
+const CAN_DISTRIBUTE_FUNDS = 6;
 
 const CONTRACT_MARKETPLACE = 1;
 const CONTRACT_DISTRIBUTOR = 2;

@@ -4,7 +4,7 @@ const BigNumber = require("bignumber.js");
 const CAN_SELL_TICKETS = 0;
 const CAN_MAKE_REFUND = 1;
 const CAN_UPDATE_CONCERT = 2;
-const CAN_ADD_CONCERTS = 6;
+const CAN_ADD_CONCERTS = 5;
 
 const CONTRACT_CONCERT = 0;
 const CONTRACT_MARKETPLACE = 1;

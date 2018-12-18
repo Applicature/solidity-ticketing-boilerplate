@@ -7,11 +7,10 @@ contract Constants {
     uint256 public constant CAN_SELL_TICKETS = 0;
     uint256 public constant CAN_MAKE_REFUND = 1;
     uint256 public constant CAN_UPDATE_CONCERT = 2;
-    uint256 public constant CAN_UPDATE_TICKET = 3;
-    uint256 public constant CAN_BURN_TICKETS = 4;
-    uint256 public constant CAN_SIGN_TRANSACTION = 5;
-    uint256 public constant CAN_ADD_CONCERTS = 6;
-    uint256 public constant CAN_DISTRIBUTE_FUNDS = 7;
+    uint256 public constant CAN_BURN_TICKETS = 3;
+    uint256 public constant CAN_SIGN_TRANSACTION = 4;
+    uint256 public constant CAN_ADD_CONCERTS = 5;
+    uint256 public constant CAN_DISTRIBUTE_FUNDS = 6;
 
     // Contract Registry keys
     uint256 public constant CONTRACT_CONCERT = 0;
@@ -26,5 +25,4 @@ contract Constants {
     string public constant ERROR_INVALID_INPUT = "ERROR_INVALID_INPUT";
     string public constant ERROR_NO_CONTRACT = "ERROR_NO_CONTRACT";
     string public constant ERROR_NOT_AVAILABLE = "ERROR_NOT_AVAILABLE";
-    string public constant ERROR_ZERO_ADDRESS = "ERROR_ZERO_ADDRESS";
 }

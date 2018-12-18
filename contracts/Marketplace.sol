@@ -60,7 +60,6 @@ contract Marketplace is Managed {
         concert.withdrawCollectedFunds(_concertId);
     }
 
-    //todo requireNotContractSender checks
     function addNewConcert(
         string _name,
         string _symbol,
@@ -314,7 +313,7 @@ contract Marketplace is Managed {
             _resellProfitShare,
             _percentageAbsMax
         );
-//todo replace 1 with ticketsAmount
+
         concert.sellTicket(_concertId, 1, _initialPrice);
 
         emit TicketPurchased(
