@@ -354,6 +354,32 @@ contract("Ticket", accounts => {
                 .then(utils.receiptShouldFailed).catch(utils.catchReceiptShouldFailed);
             await assert.equal(await ticketInstance.exists.call(0), false, "ticket exists");
         });
+
+        it("should create new ticket with same id after burn", async () => {
+            await management.setPermission(accounts[0], CAN_SELL_TICKETS, true);
+            await management.setPermission(accounts[0], CAN_BURN_TICKETS, true);
+            await management.registerContract(CONTRACT_MARKETPLACE, accounts[0]);
+
+            await assert.equal(await ticketInstance.exists.call(0), false, "ticket exists");
+            await ticketInstance.burnTicket(accounts[1], 0)
+                .then(utils.receiptShouldFailed).catch(utils.catchReceiptShouldFailed);
+
+            await ticketInstance.createTicket(accounts[1], 200, 10, 100)
+                .then(utils.receiptShouldSucceed);
+            await assert.equal(await ticketInstance.exists.call(0), true, "ticket does not exist");
+            await assert.equal(await ticketInstance.ownerOf.call(0), accounts[1], "ticket has wrong owner");
+
+            await ticketInstance.burnTicket(accounts[1], 0)
+                .then(utils.receiptShouldSucceed);
+            await ticketInstance.getTicket.call(0)
+                .then(utils.receiptShouldFailed).catch(utils.catchReceiptShouldFailed);
+            await assert.equal(await ticketInstance.exists.call(0), false, "ticket exists");
+
+            await ticketInstance.createTicket(accounts[2], 200, 10, 100)
+                .then(utils.receiptShouldSucceed);
+            await assert.equal(await ticketInstance.exists.call(0), true, "ticket does not exist");
+            await assert.equal(await ticketInstance.ownerOf.call(0), accounts[2], "ticket has wrong owner");
+        });
     });
 
     describe("check approve and transfer functionality", () => {
