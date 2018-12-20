@@ -34,7 +34,7 @@
     "solhint": "node ./node_modules/solhint/solhint.js contracts/*.sol",
     "solium": "solium -d contracts/",
     "precommit": "npm run coverage && npm run solium",
-    "test:ci": "./node_modules/.bin/run-with-ganache 'npm run coverage && npm run test' && npm run solium"
+    "test:ci": "./node_modules/.bin/run-with-ganache 'npm run coverage' && npm run solium"
   },
   "directories": {
     "test": "test"
