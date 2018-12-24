@@ -5,28 +5,28 @@ const BN = require("bn.js");
 
 const CAN_SELL_TICKETS = 0;
 const CAN_MAKE_REFUND = 1;
-const CAN_UPDATE_CONCERT = 2;
+const CAN_UPDATE_EVENT = 2;
 const CAN_BURN_TICKETS = 3;
 const CAN_SIGN_TRANSACTION = 4;
-const CAN_ADD_CONCERTS = 5;
+const CAN_ADD_EVENTS = 5;
 const CAN_DISTRIBUTE_FUNDS = 6;
 
-const CONTRACT_CONCERT = 0;
+const CONTRACT_EVENT = 0;
 const CONTRACT_MARKETPLACE = 1;
 const CONTRACT_DISTRIBUTOR = 2;
 
 const Management = artifacts.require("contracts/Management.sol");
 const Ticket = artifacts.require("contracts/Ticket.sol");
-const Concert = artifacts.require("contracts/tests/ConcertTest.sol");
+const Event = artifacts.require("contracts/tests/EventTest.sol");
 const Distributor = artifacts.require("contracts/FundsDistributor.sol");
 const Marketplace = artifacts.require("contracts/Marketplace.sol");
 
 const precision = new BigNumber("1000000000000000000");
-const concertStart = parseInt(new Date().getTime() / 1000) + 3600;
+const eventStart = parseInt(new Date().getTime() / 1000) + 3600;
 
 async function makeTransaction (
     instance,
-    concertId,
+    eventId,
     resellProfitShare,
     percentageAbsMax,
     seat,
@@ -38,7 +38,7 @@ async function makeTransaction (
         ["address", "uint256", "uint256", "uint256", "uint256", "uint256", "uint256", "uint256"],
         [
             new BN(senderAddress.substr(2), 16),
-            concertId,
+            eventId,
             resellProfitShare,
             percentageAbsMax,
             seat[0],
@@ -53,7 +53,7 @@ async function makeTransaction (
     const v = web3.toDecimal(sig.slice(128, 130)) + 27;
     const data = abi.simpleEncode(
         "buyTicketFromOrganizer(uint256,uint256,uint256,uint256[3],uint256,uint8,bytes32,bytes32)",
-        concertId,
+        eventId,
         resellProfitShare,
         percentageAbsMax,
         seat,
@@ -68,7 +68,7 @@ async function makeTransaction (
 
 async function makeRefundTransaction (
     instance,
-    concertId,
+    eventId,
     ticketId,
     refundPercentage,
     percentageAbsMax,
@@ -77,7 +77,7 @@ async function makeRefundTransaction (
 ) {
     const h = abi.soliditySHA3(
         ["address", "uint256", "uint256", "uint256", "uint256"],
-        [new BN(senderAddress.substr(2), 16), concertId, ticketId, refundPercentage, percentageAbsMax]
+        [new BN(senderAddress.substr(2), 16), eventId, ticketId, refundPercentage, percentageAbsMax]
     );
     const sig = web3.eth.sign(sign, h.toString("hex")).slice(2);
     const r = `0x${sig.slice(0, 64)}`;
@@ -85,7 +85,7 @@ async function makeRefundTransaction (
     const v = web3.toDecimal(sig.slice(128, 130)) + 27;
     const data = abi.simpleEncode(
         "refund(uint256,uint256,uint256,uint256,uint8,bytes32,bytes32)",
-        concertId,
+        eventId,
         ticketId,
         refundPercentage,
         percentageAbsMax,
@@ -100,51 +100,51 @@ async function makeRefundTransaction (
 contract("Marketplace", accounts => {
     let management;
     let marketplace;
-    let concertInstance;
+    let eventInstance;
     let distributor;
 
     beforeEach(async () => {
         management = await Management.new();
         marketplace = await Marketplace.new(management.address);
-        concertInstance = await Concert.new(management.address);
+        eventInstance = await Event.new(management.address);
         distributor = await Distributor.new(management.address);
     });
 
-    describe("check addNewConcert", () => {
-        it("should successfully add new concert", async () => {
-            await management.setPermission(marketplace.address, CAN_ADD_CONCERTS, true);
+    describe("check addNewEvent", () => {
+        it("should successfully add new event", async () => {
+            await management.setPermission(marketplace.address, CAN_ADD_EVENTS, true);
             await management.setPermission(marketplace.address, CAN_SELL_TICKETS, true);
             await management.registerContract(CONTRACT_MARKETPLACE, marketplace.address);
-            await management.registerContract(CONTRACT_CONCERT, concertInstance.address);
+            await management.registerContract(CONTRACT_EVENT, eventInstance.address);
 
-            await assert.equal(await concertInstance.concertExists.call(0), false, "concert exists");
+            await assert.equal(await eventInstance.eventExists.call(0), false, "event exists");
             await assert.equal(await management.ticketRegistry.call(0), 0, "ticketInstance is defined");
 
-            await marketplace.addNewConcert("TICKET", "TKT", 100, concertStart).then(utils.receiptShouldSucceed);
-            await assert.equal(await concertInstance.concertExists.call(0), true, "concert does not exist");
+            await marketplace.addNewEvent("TICKET", "TKT", 100, eventStart).then(utils.receiptShouldSucceed);
+            await assert.equal(await eventInstance.eventExists.call(0), true, "event does not exist");
 
-            const concert = await concertInstance.getConcert.call(0);
+            const event = await eventInstance.getEvent.call(0);
 
-            await assert.equal(concert[0], accounts[0], "concert has wrong owner");
-            await assert.equal(concert[1], 100, "concert has wrong ticketsAmount");
-            await assert.equal(concert[2], 0, "concert has wrong soldTicketsAmount");
-            await assert.equal(concert[3], 0, "concert has wrong collectedFunds");
-            await assert.equal(concert[4], concertStart, "concert has wrong startTime");
+            await assert.equal(event[0], accounts[0], "event has wrong owner");
+            await assert.equal(event[1], 100, "event has wrong ticketsAmount");
+            await assert.equal(event[2], 0, "event has wrong soldTicketsAmount");
+            await assert.equal(event[3], 0, "event has wrong collectedFunds");
+            await assert.equal(event[4], eventStart, "event has wrong startTime");
 
             await assert.notEqual(await management.ticketRegistry.call(0), 0, "ticketInstance is not defined");
         });
 
-        it("should fail as concert does not exist in registry", async () => {
-            await management.setPermission(marketplace.address, CAN_ADD_CONCERTS, true);
+        it("should fail as event does not exist in registry", async () => {
+            await management.setPermission(marketplace.address, CAN_ADD_EVENTS, true);
             await management.setPermission(marketplace.address, CAN_SELL_TICKETS, true);
             await management.registerContract(CONTRACT_MARKETPLACE, marketplace.address);
 
-            await assert.equal(await concertInstance.concertExists.call(0), false, "concert exists");
+            await assert.equal(await eventInstance.eventExists.call(0), false, "event exists");
             await assert.equal(await management.ticketRegistry.call(0), 0, "ticketInstance is defined");
 
-            await marketplace.addNewConcert("TICKET", "TKT", 100, concertStart)
+            await marketplace.addNewEvent("TICKET", "TKT", 100, eventStart)
                 .then(utils.receiptShouldFailed).catch(utils.catchReceiptShouldFailed);
-            await assert.equal(await concertInstance.concertExists.call(0), false, "concert exists");
+            await assert.equal(await eventInstance.eventExists.call(0), false, "event exists");
 
             await assert.equal(await management.ticketRegistry.call(0), 0, "ticketInstance is defined");
         });
@@ -152,20 +152,20 @@ contract("Marketplace", accounts => {
 
     describe("check buyTicketFromOrganizer", () => {
         it("should successfully buy a ticket", async () => {
-            await management.setPermission(marketplace.address, CAN_ADD_CONCERTS, true);
+            await management.setPermission(marketplace.address, CAN_ADD_EVENTS, true);
             await management.setPermission(marketplace.address, CAN_SELL_TICKETS, true);
             await management.registerContract(CONTRACT_MARKETPLACE, marketplace.address);
-            await management.registerContract(CONTRACT_CONCERT, concertInstance.address);
+            await management.registerContract(CONTRACT_EVENT, eventInstance.address);
 
-            await assert.equal(await concertInstance.concertExists.call(0), false, "concert exists");
+            await assert.equal(await eventInstance.eventExists.call(0), false, "event exists");
             await assert.equal(await management.ticketRegistry.call(0), 0, "ticketInstance is defined");
 
-            await marketplace.addNewConcert("TICKET", "TKT", 100, concertStart).then(utils.receiptShouldSucceed);
-            await assert.equal(await concertInstance.concertExists.call(0), true, "concert does not exist");
+            await marketplace.addNewEvent("TICKET", "TKT", 100, eventStart).then(utils.receiptShouldSucceed);
+            await assert.equal(await eventInstance.eventExists.call(0), true, "event does not exist");
 
-            const concert = await concertInstance.getConcert.call(0);
+            const event = await eventInstance.getEvent.call(0);
 
-            await assert.equal(concert.length, 5, "concert does not exist");
+            await assert.equal(event.length, 5, "event does not exist");
 
             await assert.notEqual(await management.ticketRegistry.call(0), 0, "ticketInstance is not defined");
 
@@ -198,28 +198,28 @@ contract("Marketplace", accounts => {
             await assert.equal(ticket[5], 0, "ticket has wrong resalePrice");
         });
 
-        it("should fail as concert contract is not registered", async () => {
-            await management.setPermission(marketplace.address, CAN_ADD_CONCERTS, true);
+        it("should fail as event contract is not registered", async () => {
+            await management.setPermission(marketplace.address, CAN_ADD_EVENTS, true);
             await management.setPermission(marketplace.address, CAN_SELL_TICKETS, true);
-            await management.registerContract(CONTRACT_CONCERT, concertInstance.address);
+            await management.registerContract(CONTRACT_EVENT, eventInstance.address);
             await management.registerContract(CONTRACT_MARKETPLACE, marketplace.address);
 
-            await assert.equal(await concertInstance.concertExists.call(0), false, "concert exists");
+            await assert.equal(await eventInstance.eventExists.call(0), false, "event exists");
             await assert.equal(await management.ticketRegistry.call(0), 0, "ticketInstance is defined");
 
-            await marketplace.addNewConcert("TICKET", "TKT", 100, concertStart).then(utils.receiptShouldSucceed);
-            await assert.equal(await concertInstance.concertExists.call(0), true, "concert does not exist");
+            await marketplace.addNewEvent("TICKET", "TKT", 100, eventStart).then(utils.receiptShouldSucceed);
+            await assert.equal(await eventInstance.eventExists.call(0), true, "event does not exist");
 
-            const concert = await concertInstance.getConcert.call(0);
+            const event = await eventInstance.getEvent.call(0);
 
-            await assert.equal(concert.length, 5, "concert does not exist");
+            await assert.equal(event.length, 5, "event does not exist");
 
             await assert.notEqual(await management.ticketRegistry.call(0), 0, "ticketInstance is not defined");
 
             const signAddress = accounts[1];
             await management.setPermission(signAddress, CAN_SIGN_TRANSACTION, true);
 
-            await management.registerContract(CONTRACT_CONCERT, 0);
+            await management.registerContract(CONTRACT_EVENT, 0);
             await makeTransaction(
                 marketplace,
                 0,
@@ -231,7 +231,7 @@ contract("Marketplace", accounts => {
                 accounts[0]
             ).then(utils.receiptShouldFailed).catch(utils.catchReceiptShouldFailed);
 
-            await management.registerContract(CONTRACT_CONCERT, concertInstance.address);
+            await management.registerContract(CONTRACT_EVENT, eventInstance.address);
             await makeTransaction(
                 marketplace,
                 0,
@@ -247,23 +247,23 @@ contract("Marketplace", accounts => {
 
     describe("check buyTicketFromReseller", () => {
         it("should successfully resell a ticket", async () => {
-            await management.setPermission(marketplace.address, CAN_ADD_CONCERTS, true);
+            await management.setPermission(marketplace.address, CAN_ADD_EVENTS, true);
             await management.setPermission(marketplace.address, CAN_SELL_TICKETS, true);
             await management.setPermission(marketplace.address, CAN_DISTRIBUTE_FUNDS, true);
             await management.registerContract(CONTRACT_DISTRIBUTOR, distributor.address);
             await management.registerContract(CONTRACT_MARKETPLACE, marketplace.address);
-            await management.registerContract(CONTRACT_CONCERT, concertInstance.address);
+            await management.registerContract(CONTRACT_EVENT, eventInstance.address);
 
-            await assert.equal(await concertInstance.concertExists.call(0), false, "concert exists");
+            await assert.equal(await eventInstance.eventExists.call(0), false, "event exists");
             await assert.equal(await management.ticketRegistry.call(0), 0, "ticketInstance is defined");
 
-            await marketplace.addNewConcert("TICKET", "TKT", 100, concertStart, { from: accounts[4] })
+            await marketplace.addNewEvent("TICKET", "TKT", 100, eventStart, { from: accounts[4] })
                 .then(utils.receiptShouldSucceed);
-            await assert.equal(await concertInstance.concertExists.call(0), true, "concert does not exist");
+            await assert.equal(await eventInstance.eventExists.call(0), true, "event does not exist");
 
-            const concert = await concertInstance.getConcert.call(0);
+            const event = await eventInstance.getEvent.call(0);
 
-            await assert.equal(concert.length, 5, "concert does not exist");
+            await assert.equal(event.length, 5, "event does not exist");
 
             await assert.notEqual(await management.ticketRegistry.call(0), 0, "ticketInstance is not defined");
 
@@ -312,22 +312,22 @@ contract("Marketplace", accounts => {
 
     describe("check refund", () => {
         it("should successfully refund a ticket", async () => {
-            await management.setPermission(marketplace.address, CAN_ADD_CONCERTS, true);
+            await management.setPermission(marketplace.address, CAN_ADD_EVENTS, true);
             await management.setPermission(marketplace.address, CAN_SELL_TICKETS, true);
             await management.setPermission(marketplace.address, CAN_MAKE_REFUND, true);
             await management.setPermission(marketplace.address, CAN_BURN_TICKETS, true);
             await management.registerContract(CONTRACT_MARKETPLACE, marketplace.address);
-            await management.registerContract(CONTRACT_CONCERT, concertInstance.address);
+            await management.registerContract(CONTRACT_EVENT, eventInstance.address);
 
-            await assert.equal(await concertInstance.concertExists.call(0), false, "concert exists");
+            await assert.equal(await eventInstance.eventExists.call(0), false, "event exists");
             await assert.equal(await management.ticketRegistry.call(0), 0, "ticketInstance is defined");
 
-            await marketplace.addNewConcert("TICKET", "TKT", 100, concertStart).then(utils.receiptShouldSucceed);
-            await assert.equal(await concertInstance.concertExists.call(0), true, "concert does not exist");
+            await marketplace.addNewEvent("TICKET", "TKT", 100, eventStart).then(utils.receiptShouldSucceed);
+            await assert.equal(await eventInstance.eventExists.call(0), true, "event does not exist");
 
-            const concert = await concertInstance.getConcert.call(0);
+            const event = await eventInstance.getEvent.call(0);
 
-            await assert.equal(concert.length, 5, "concert does not exist");
+            await assert.equal(event.length, 5, "event does not exist");
 
             await assert.notEqual(await management.ticketRegistry.call(0), 0, "ticketInstance is not defined");
 
@@ -349,7 +349,7 @@ contract("Marketplace", accounts => {
             const ticketInstance = Ticket.at(ticketAddress);
 
             assert.equal(await ticketInstance.ownerOf.call(0), accounts[0], "owner is not equal");
-            assert.equal(await concertInstance.getCollectedFundsTest.call(0),
+            assert.equal(await eventInstance.getCollectedFundsTest.call(0),
                 new BigNumber("0.5e18").valueOf(), "collectedFunds is not equal");
 
             const previousMarketplaceBalance = await utils.getEtherBalance(marketplace.address).valueOf();
@@ -359,36 +359,36 @@ contract("Marketplace", accounts => {
             await makeRefundTransaction(marketplace, 0, 0, 50, 100, signAddress, accounts[0])
                 .then((result) => (txCost = utils.getTxCost(result)));
 
-            assert.equal(await concertInstance.getCollectedFundsTest.call(0),
+            assert.equal(await eventInstance.getCollectedFundsTest.call(0),
                 new BigNumber("0.25e18").valueOf(), "collectedFunds is not equal");
 
             const currentMarketplaceBalance = await utils.getEtherBalance(marketplace.address).valueOf();
             const currentOwnerBalance = await utils.getEtherBalance(accounts[0]).valueOf();
 
             await assert.equal(new BigNumber(previousMarketplaceBalance).sub(0.5e18 * 50 / 100).valueOf(),
-                currentMarketplaceBalance, "concert eth balance is not equal");
+                currentMarketplaceBalance, "event eth balance is not equal");
 
             await assert.equal(new BigNumber(previousOwnerBalance).sub(txCost).add(0.5e18 * 50 / 100).valueOf(),
                 currentOwnerBalance, "owner eth balance is not equal");
         });
 
-        it("should fail as concert is not registered", async () => {
-            await management.setPermission(marketplace.address, CAN_ADD_CONCERTS, true);
+        it("should fail as event is not registered", async () => {
+            await management.setPermission(marketplace.address, CAN_ADD_EVENTS, true);
             await management.setPermission(marketplace.address, CAN_SELL_TICKETS, true);
             await management.setPermission(marketplace.address, CAN_MAKE_REFUND, true);
             await management.setPermission(marketplace.address, CAN_BURN_TICKETS, true);
             await management.registerContract(CONTRACT_MARKETPLACE, marketplace.address);
-            await management.registerContract(CONTRACT_CONCERT, concertInstance.address);
+            await management.registerContract(CONTRACT_EVENT, eventInstance.address);
 
-            await assert.equal(await concertInstance.concertExists.call(0), false, "concert exists");
+            await assert.equal(await eventInstance.eventExists.call(0), false, "event exists");
             await assert.equal(await management.ticketRegistry.call(0), 0, "ticketInstance is defined");
 
-            await marketplace.addNewConcert("TICKET", "TKT", 100, concertStart).then(utils.receiptShouldSucceed);
-            await assert.equal(await concertInstance.concertExists.call(0), true, "concert does not exist");
+            await marketplace.addNewEvent("TICKET", "TKT", 100, eventStart).then(utils.receiptShouldSucceed);
+            await assert.equal(await eventInstance.eventExists.call(0), true, "event does not exist");
 
-            const concert = await concertInstance.getConcert.call(0);
+            const event = await eventInstance.getEvent.call(0);
 
-            await assert.equal(concert.length, 5, "concert does not exist");
+            await assert.equal(event.length, 5, "event does not exist");
 
             await assert.notEqual(await management.ticketRegistry.call(0), 0, "ticketInstance is not defined");
 
@@ -410,14 +410,14 @@ contract("Marketplace", accounts => {
             const ticketInstance = Ticket.at(ticketAddress);
 
             assert.equal(await ticketInstance.ownerOf.call(0), accounts[0], "owner is not equal");
-            assert.equal(await concertInstance.getCollectedFundsTest.call(0), new BigNumber("0.5e18").valueOf(),
+            assert.equal(await eventInstance.getCollectedFundsTest.call(0), new BigNumber("0.5e18").valueOf(),
                 "collectedFunds is not equal");
 
-            await management.registerContract(CONTRACT_CONCERT, 0);
+            await management.registerContract(CONTRACT_EVENT, 0);
             await makeRefundTransaction(marketplace, 0, 0, 50, 100, signAddress, accounts[0])
                 .then(utils.receiptShouldFailed).catch(utils.catchReceiptShouldFailed);
 
-            await management.registerContract(CONTRACT_CONCERT, concertInstance.address);
+            await management.registerContract(CONTRACT_EVENT, eventInstance.address);
             await makeRefundTransaction(marketplace, 0, 0, 50, 100, signAddress, accounts[0])
                 .then(utils.receiptShouldSucceed);
         });
@@ -427,7 +427,7 @@ contract("Marketplace", accounts => {
         it("check isInitialized", async () => {
             await assert.equal(await marketplace.isInitialized.call(), false, "marketplace is initialized");
 
-            await management.registerContract(CONTRACT_CONCERT, concertInstance.address);
+            await management.registerContract(CONTRACT_EVENT, eventInstance.address);
             await assert.equal(await marketplace.isInitialized.call(), false, "marketplace is initialized");
 
             await management.registerContract(CONTRACT_MARKETPLACE, marketplace.address);
@@ -441,25 +441,25 @@ contract("Marketplace", accounts => {
         });
     });
 
-    describe("check withdrawConcertFunds", () => {
+    describe("check withdrawEventFunds", () => {
         it("should successfully withdraw funds", async () => {
-            await management.setPermission(marketplace.address, CAN_ADD_CONCERTS, true);
+            await management.setPermission(marketplace.address, CAN_ADD_EVENTS, true);
             await management.setPermission(marketplace.address, CAN_SELL_TICKETS, true);
             await management.setPermission(marketplace.address, CAN_MAKE_REFUND, true);
             await management.setPermission(marketplace.address, CAN_BURN_TICKETS, true);
-            await management.setPermission(marketplace.address, CAN_UPDATE_CONCERT, true);
+            await management.setPermission(marketplace.address, CAN_UPDATE_EVENT, true);
             await management.registerContract(CONTRACT_MARKETPLACE, marketplace.address);
-            await management.registerContract(CONTRACT_CONCERT, concertInstance.address);
+            await management.registerContract(CONTRACT_EVENT, eventInstance.address);
 
-            await assert.equal(await concertInstance.concertExists.call(0), false, "concert exists");
+            await assert.equal(await eventInstance.eventExists.call(0), false, "event exists");
             await assert.equal(await management.ticketRegistry.call(0), 0, "ticketInstance is defined");
 
-            await marketplace.addNewConcert("TICKET", "TKT", 100, concertStart).then(utils.receiptShouldSucceed);
-            await assert.equal(await concertInstance.concertExists.call(0), true, "concert does not exist");
+            await marketplace.addNewEvent("TICKET", "TKT", 100, eventStart).then(utils.receiptShouldSucceed);
+            await assert.equal(await eventInstance.eventExists.call(0), true, "event does not exist");
 
-            const concert = await concertInstance.getConcert.call(0);
+            const event = await eventInstance.getEvent.call(0);
 
-            await assert.equal(concert.length, 5, "concert does not exist");
+            await assert.equal(event.length, 5, "event does not exist");
 
             await assert.notEqual(await management.ticketRegistry.call(0), 0, "ticketInstance is not defined");
 
@@ -481,35 +481,35 @@ contract("Marketplace", accounts => {
             const ticketInstance = Ticket.at(ticketAddress);
 
             assert.equal(await ticketInstance.ownerOf.call(0), accounts[1], "owner is not equal");
-            assert.equal(await concertInstance.getCollectedFundsTest.call(0),
+            assert.equal(await eventInstance.getCollectedFundsTest.call(0),
                 new BigNumber("0.5e18").valueOf(), "collectedFunds is not equal");
 
-            await concertInstance.updateStartTime(0, parseInt(new Date().getTime() / 1000) - 3600)
+            await eventInstance.updateStartTime(0, parseInt(new Date().getTime() / 1000) - 3600)
                 .then(utils.receiptShouldSucceed);
 
             await makeRefundTransaction(marketplace, 0, 0, 50, 100, signAddress, accounts[1])
                 .then(utils.receiptShouldFailed).catch(utils.catchReceiptShouldFailed);
 
-            assert.equal(await concertInstance.getCollectedFunds.call(0),
+            assert.equal(await eventInstance.getCollectedFunds.call(0),
                 new BigNumber("0.5e18").valueOf(), "collectedFunds is not equal");
 
             const previousMarketplaceBalance = await utils.getEtherBalance(marketplace.address).valueOf();
-            const previousConcertOwnerBalance = await utils.getEtherBalance(accounts[0]).valueOf();
+            const previousEventOwnerBalance = await utils.getEtherBalance(accounts[0]).valueOf();
 
             let txCost;
-            await marketplace.withdrawConcertFunds(0)
+            await marketplace.withdrawEventFunds(0)
                 .then((result) => (txCost = utils.getTxCost(result)));
 
-            assert.equal(await concertInstance.getCollectedFunds.call(0), 0, "collectedFunds is not equal");
+            assert.equal(await eventInstance.getCollectedFunds.call(0), 0, "collectedFunds is not equal");
 
             const currentMarketplaceBalance = await utils.getEtherBalance(marketplace.address).valueOf();
-            const currentConcertOwnerBalance = await utils.getEtherBalance(accounts[0]).valueOf();
+            const currentEventOwnerBalance = await utils.getEtherBalance(accounts[0]).valueOf();
 
             await assert.equal(new BigNumber(previousMarketplaceBalance).sub(0.5e18).valueOf(),
-                currentMarketplaceBalance, "concert eth balance is not equal");
+                currentMarketplaceBalance, "event eth balance is not equal");
 
-            await assert.equal(new BigNumber(previousConcertOwnerBalance).sub(txCost).add(0.5e18).valueOf(),
-                currentConcertOwnerBalance, "owner eth balance is not equal");
+            await assert.equal(new BigNumber(previousEventOwnerBalance).sub(txCost).add(0.5e18).valueOf(),
+                currentEventOwnerBalance, "owner eth balance is not equal");
         });
     });
 });

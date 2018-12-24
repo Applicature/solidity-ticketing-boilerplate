@@ -2,7 +2,7 @@ const utils = require("./utils");
 const BigNumber = require("bignumber.js");
 
 const CAN_SELL_TICKETS = 0;
-const CAN_ADD_CONCERTS = 5;
+const CAN_ADD_EVENTS = 5;
 const CAN_DISTRIBUTE_FUNDS = 6;
 
 const CONTRACT_MARKETPLACE = 1;
@@ -11,20 +11,20 @@ const CONTRACT_DISTRIBUTOR = 2;
 const Management = artifacts.require("contracts/Management.sol");
 const Ticket = artifacts.require("contracts/Ticket.sol");
 const Distributor = artifacts.require("contracts/FundsDistributor.sol");
-const Concert = artifacts.require("contracts/Concert.sol");
+const Event = artifacts.require("contracts/Event.sol");
 
-const concertStart = parseInt(new Date().getTime() / 1000) + 3600;
+const eventStart = parseInt(new Date().getTime() / 1000) + 3600;
 
 contract("Distributor", accounts => {
     let management;
     let distributor;
-    let concertInstance;
+    let eventInstance;
     let ticketInstance;
 
     beforeEach(async () => {
         management = await Management.new();
         distributor = await Distributor.new(management.address);
-        concertInstance = await Concert.new(management.address);
+        eventInstance = await Event.new(management.address);
         ticketInstance = await Ticket.new(management.address, "TICKET", "TKT");
     });
 
@@ -32,15 +32,15 @@ contract("Distributor", accounts => {
         it("should successfully distribute resale funds", async () => {
             await management.setPermission(accounts[0], CAN_SELL_TICKETS, true);
             await management.setPermission(accounts[0], CAN_DISTRIBUTE_FUNDS, true);
-            await management.setPermission(accounts[0], CAN_ADD_CONCERTS, true);
+            await management.setPermission(accounts[0], CAN_ADD_EVENTS, true);
             await management.registerContract(CONTRACT_MARKETPLACE, accounts[0]);
 
-            await assert.equal(await concertInstance.concertExists.call(0), false, "concert exists");
-            await concertInstance.createConcert(100, concertStart)
+            await assert.equal(await eventInstance.eventExists.call(0), false, "event exists");
+            await eventInstance.createEvent(100, eventStart)
                 .then(utils.receiptShouldSucceed);
-            await assert.equal(await concertInstance.concertExists.call(0), true, "concert does not exist");
+            await assert.equal(await eventInstance.eventExists.call(0), true, "event does not exist");
 
-            await management.registerNewConcert(0, accounts[2], ticketInstance.address);
+            await management.registerNewEvent(0, accounts[2], ticketInstance.address);
 
             await assert.equal(await ticketInstance.exists.call(0), false, "ticket exists");
             await ticketInstance.createTicket(accounts[1], 1e18, 10, 100)
@@ -65,16 +65,16 @@ contract("Distributor", accounts => {
                 currentOldOwnerBalance, "old owner eth balance is not equal");
         });
 
-        it("should fail as there is no such concert", async () => {
+        it("should fail as there is no such event", async () => {
             await management.setPermission(accounts[0], CAN_SELL_TICKETS, true);
             await management.setPermission(accounts[0], CAN_DISTRIBUTE_FUNDS, true);
-            await management.setPermission(accounts[0], CAN_ADD_CONCERTS, true);
+            await management.setPermission(accounts[0], CAN_ADD_EVENTS, true);
             await management.registerContract(CONTRACT_MARKETPLACE, accounts[0]);
 
-            await assert.equal(await concertInstance.concertExists.call(0), false, "concert exists");
-            await concertInstance.createConcert(100, concertStart)
+            await assert.equal(await eventInstance.eventExists.call(0), false, "event exists");
+            await eventInstance.createEvent(100, eventStart)
                 .then(utils.receiptShouldSucceed);
-            await assert.equal(await concertInstance.concertExists.call(0), true, "concert does not exist");
+            await assert.equal(await eventInstance.eventExists.call(0), true, "event does not exist");
 
             await assert.equal(await ticketInstance.exists.call(0), false, "ticket exists");
             await ticketInstance.createTicket(accounts[1], 1e18, 10, 100)
@@ -91,15 +91,15 @@ contract("Distributor", accounts => {
         it("should fail as ticket resalePrice and msg.value are not equal", async () => {
             await management.setPermission(accounts[0], CAN_SELL_TICKETS, true);
             await management.setPermission(accounts[0], CAN_DISTRIBUTE_FUNDS, true);
-            await management.setPermission(accounts[0], CAN_ADD_CONCERTS, true);
+            await management.setPermission(accounts[0], CAN_ADD_EVENTS, true);
             await management.registerContract(CONTRACT_MARKETPLACE, accounts[0]);
 
-            await assert.equal(await concertInstance.concertExists.call(0), false, "concert exists");
-            await concertInstance.createConcert(100, concertStart)
+            await assert.equal(await eventInstance.eventExists.call(0), false, "event exists");
+            await eventInstance.createEvent(100, eventStart)
                 .then(utils.receiptShouldSucceed);
-            await assert.equal(await concertInstance.concertExists.call(0), true, "concert does not exist");
+            await assert.equal(await eventInstance.eventExists.call(0), true, "event does not exist");
 
-            await management.registerNewConcert(0, accounts[2], ticketInstance.address);
+            await management.registerNewEvent(0, accounts[2], ticketInstance.address);
 
             await assert.equal(await ticketInstance.exists.call(0), false, "ticket exists");
             await ticketInstance.createTicket(accounts[1], 1e18, 10, 100)
@@ -115,15 +115,15 @@ contract("Distributor", accounts => {
 
         it("should fail as caller has no permissions", async () => {
             await management.setPermission(accounts[0], CAN_SELL_TICKETS, true);
-            await management.setPermission(accounts[0], CAN_ADD_CONCERTS, true);
+            await management.setPermission(accounts[0], CAN_ADD_EVENTS, true);
             await management.registerContract(CONTRACT_MARKETPLACE, accounts[0]);
 
-            await assert.equal(await concertInstance.concertExists.call(0), false, "concert exists");
-            await concertInstance.createConcert(100, concertStart)
+            await assert.equal(await eventInstance.eventExists.call(0), false, "event exists");
+            await eventInstance.createEvent(100, eventStart)
                 .then(utils.receiptShouldSucceed);
-            await assert.equal(await concertInstance.concertExists.call(0), true, "concert does not exist");
+            await assert.equal(await eventInstance.eventExists.call(0), true, "event does not exist");
 
-            await management.registerNewConcert(0, accounts[2], ticketInstance.address);
+            await management.registerNewEvent(0, accounts[2], ticketInstance.address);
 
             await assert.equal(await ticketInstance.exists.call(0), false, "ticket exists");
             await ticketInstance.createTicket(accounts[1], 1e18, 10, 100)
@@ -144,15 +144,15 @@ contract("Distributor", accounts => {
         it("should fail as caller is not registered", async () => {
             await management.setPermission(accounts[0], CAN_SELL_TICKETS, true);
             await management.setPermission(accounts[0], CAN_DISTRIBUTE_FUNDS, true);
-            await management.setPermission(accounts[0], CAN_ADD_CONCERTS, true);
+            await management.setPermission(accounts[0], CAN_ADD_EVENTS, true);
             await management.registerContract(CONTRACT_MARKETPLACE, accounts[0]);
 
-            await assert.equal(await concertInstance.concertExists.call(0), false, "concert exists");
-            await concertInstance.createConcert(100, concertStart)
+            await assert.equal(await eventInstance.eventExists.call(0), false, "event exists");
+            await eventInstance.createEvent(100, eventStart)
                 .then(utils.receiptShouldSucceed);
-            await assert.equal(await concertInstance.concertExists.call(0), true, "concert does not exist");
+            await assert.equal(await eventInstance.eventExists.call(0), true, "event does not exist");
 
-            await management.registerNewConcert(0, accounts[2], ticketInstance.address);
+            await management.registerNewEvent(0, accounts[2], ticketInstance.address);
 
             await assert.equal(await ticketInstance.exists.call(0), false, "ticket exists");
             await ticketInstance.createTicket(accounts[1], 1e18, 10, 100)

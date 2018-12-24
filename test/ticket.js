@@ -8,7 +8,7 @@ const CONTRACT_MARKETPLACE = 1;
 
 const Management = artifacts.require("contracts/Management.sol");
 const Ticket = artifacts.require("contracts/Ticket.sol");
-const Concert = artifacts.require("contracts/Concert.sol");
+const Concert = artifacts.require("contracts/Event.sol");
 
 contract("Ticket", accounts => {
     let management;
