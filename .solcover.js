@@ -1,7 +1,7 @@
 module.exports = {
     skipFiles: [
         'Migrations.sol',
-        'tests/ConcertTest.sol'
+        'tests/EventTest.sol'
     ],
     // need for dependencies
     copyNodeModules: false,

@@ -9,9 +9,9 @@ contract Management is Ownable, Constants {
     // Contract Registry
     mapping(uint256 => address) public contractRegistry;
 
-    mapping(address => uint256[]) public concertRegistry;
+    mapping(address => uint256[]) public eventsRegistry;
 
-    mapping(uint256 => address) public concertOrganizersRegistry;
+    mapping(uint256 => address) public eventOrganizersRegistry;
 
     mapping(uint256 => address) public ticketRegistry;
 
@@ -22,9 +22,9 @@ contract Management is Ownable, Constants {
 
     event ContractRegistered(uint256 _key, address _target);
 
-    event ConcertRegistered(address _owner, uint256 _concertId);
+    event EventRegistered(address _owner, uint256 _eventId);
 
-    event TicketRegistered(uint256 _concertId, address _ticket);
+    event TicketRegistered(uint256 _eventId, address _ticket);
 
     function setPermission(
         address _address,
@@ -50,29 +50,30 @@ contract Management is Ownable, Constants {
         emit ContractRegistered(_key, _target);
     }
 
-    function registerNewConcert(
-        uint256 _concertId,
+    function registerNewEvent(
+        uint256 _eventId,
         address _organizer,
         address _ticket
     )
         public
     {
         require(
-            permissions[msg.sender][CAN_ADD_CONCERTS] &&
+            permissions[msg.sender][CAN_ADD_EVENTS] &&
             contractRegistry[CONTRACT_MARKETPLACE] == msg.sender,
             ERROR_ACCESS_DENIED
         );
 
-        concertRegistry[msg.sender].push(_concertId);
-        concertOrganizersRegistry[_concertId] = _organizer;
-        emit ConcertRegistered(_organizer, _concertId);
+        eventsRegistry[msg.sender].push(_eventId);
+        eventOrganizersRegistry[_eventId] = _organizer;
+        emit EventRegistered(_organizer, _eventId);
 
-        ticketRegistry[_concertId] = _ticket;
-        emit TicketRegistered(_concertId, _ticket);
+        ticketRegistry[_eventId] = _ticket;
+        emit TicketRegistered(_eventId, _ticket);
     }
 
     function isContract(address _addr) public view returns (bool) {
         uint32 size;
+        /* solium-disable-next-line security/no-inline-assembly */
         assembly {
             size := extcodesize(_addr)
         }

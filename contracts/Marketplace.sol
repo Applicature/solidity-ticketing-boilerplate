@@ -3,7 +3,7 @@ pragma solidity ^0.4.24;
 import "./Managed.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "./Ticket.sol";
-import "./Concert.sol";
+import "./Event.sol";
 import "./FundsDistributor.sol";
 
 
@@ -12,14 +12,14 @@ contract Marketplace is Managed {
     using SafeMath for uint256;
 
     event TicketPurchased(
-        uint256 _concertId,
+        uint256 _eventId,
         uint256 indexed _ticketId,
         address indexed _buyer,
         uint256 _ticketPrice
     );
 
     event TicketResold(
-        uint256 _concertId,
+        uint256 _eventId,
         uint256 indexed _ticketId,
         address indexed _reseller,
         address indexed _buyer,
@@ -28,28 +28,28 @@ contract Marketplace is Managed {
 
     event Refund(
         address _ticketOwner,
-        uint256 _concertId,
+        uint256 _eventId,
         uint256 _ticketId
     );
 
     constructor(address _management) public Managed(_management){}
 
-    function withdrawConcertFunds(
-        uint256 _concertId
+    function withdrawEventFunds(
+        uint256 _eventId
     )
         public
-        requireContractExistsInRegistry(CONTRACT_CONCERT)
+        requireContractExistsInRegistry(CONTRACT_EVENT)
     {
-        Concert concert = Concert(
-            management.contractRegistry(CONTRACT_CONCERT)
+        Event _event = Event(
+            management.contractRegistry(CONTRACT_EVENT)
         );
 
         require(
-            management.concertOrganizersRegistry(_concertId) == msg.sender,
+            management.eventOrganizersRegistry(_eventId) == msg.sender,
             ERROR_ACCESS_DENIED
         );
 
-        uint256 value = concert.getCollectedFunds(_concertId);
+        uint256 value = _event.getCollectedFunds(_eventId);
 
         require(
             address(this).balance >= value,
@@ -57,10 +57,10 @@ contract Marketplace is Managed {
         );
 
         msg.sender.transfer(value);
-        concert.withdrawCollectedFunds(_concertId);
+        _event.withdrawCollectedFunds(_eventId);
     }
 
-    function addNewConcert(
+    function addNewEvent(
         string _name,
         string _symbol,
         uint256 _ticketsAmount,
@@ -68,21 +68,21 @@ contract Marketplace is Managed {
     )
         public
         requireNotContractSender()
-        requireContractExistsInRegistry(CONTRACT_CONCERT)
+        requireContractExistsInRegistry(CONTRACT_EVENT)
     {
-        Concert concert = Concert(
-            management.contractRegistry(CONTRACT_CONCERT)
+        Event _event = Event(
+            management.contractRegistry(CONTRACT_EVENT)
         );
 
-        uint256 _concertId = concert.createConcert(_ticketsAmount, _startTime);
+        uint256 _eventId = _event.createEvent(_ticketsAmount, _startTime);
 
         Ticket ticket = new Ticket(management, _name, _symbol);
 
-        management.registerNewConcert(_concertId, msg.sender, address(ticket));
+        management.registerNewEvent(_eventId, msg.sender, address(ticket));
     }
 
     function buyTicketFromOrganizer(
-        uint256 _concertId,
+        uint256 _eventId,
         uint256 _resellProfitShare,
         uint256 _percentageAbsMax,
         uint256[SECTION_ROW_SEAT] _seat,
@@ -94,11 +94,11 @@ contract Marketplace is Managed {
         public
         payable
         requireNotContractSender()
-        requireContractExistsInRegistry(CONTRACT_CONCERT)
+        requireContractExistsInRegistry(CONTRACT_EVENT)
     {
         address recoveredAddress = verifyPurchase(
             msg.sender,
-            _concertId,
+            _eventId,
             _resellProfitShare,
             _percentageAbsMax,
             _seat,
@@ -115,7 +115,7 @@ contract Marketplace is Managed {
 
         internalBuyTicketFromOrganizer(
             msg.sender,
-            _concertId,
+            _eventId,
             _resellProfitShare,
             _percentageAbsMax,
             _initialPrice
@@ -123,21 +123,21 @@ contract Marketplace is Managed {
     }
 
     function buyTicketFromReseller(
-        uint256 _concertId,
+        uint256 _eventId,
         uint256 _ticketId
     )
         public
         payable
         requireNotContractSender()
-        requireContractExistsInRegistry(CONTRACT_CONCERT)
+        requireContractExistsInRegistry(CONTRACT_EVENT)
         requireContractExistsInRegistry(CONTRACT_DISTRIBUTOR)
     {
-        Concert concert = Concert(
-            management.contractRegistry(CONTRACT_CONCERT)
+        Event _event = Event(
+            management.contractRegistry(CONTRACT_EVENT)
         );
 
         require(
-            concert.concertHasStarted(_concertId) == false,
+            _event.eventHasBeenStarted(_eventId) == false,
             ERROR_NOT_AVAILABLE
         );
 
@@ -146,16 +146,16 @@ contract Marketplace is Managed {
         );
 
         distributor.distributeResaleFunds.value(msg.value)(
-            _concertId,
+            _eventId,
             _ticketId
         );
 
-        Ticket ticket = Ticket(management.ticketRegistry(_concertId));
+        Ticket ticket = Ticket(management.ticketRegistry(_eventId));
 
         address previousOwner = ticket.resellTicket(_ticketId, msg.sender);
 
         emit TicketResold(
-            _concertId,
+            _eventId,
             _ticketId,
             previousOwner,
             msg.sender,
@@ -164,7 +164,7 @@ contract Marketplace is Managed {
     }
 
     function refund(
-        uint256 _concertId,
+        uint256 _eventId,
         uint256 _ticketId,
         uint256 _refundPercentage,
         uint256 _percentageAbsMax,
@@ -174,7 +174,7 @@ contract Marketplace is Managed {
     )
         public
         requireNotContractSender()
-        requireContractExistsInRegistry(CONTRACT_CONCERT)
+        requireContractExistsInRegistry(CONTRACT_EVENT)
     {
         require(
             _refundPercentage <= _percentageAbsMax,
@@ -183,7 +183,7 @@ contract Marketplace is Managed {
 
         address recoveredAddress = verifyRefund(
             msg.sender,
-            _concertId,
+            _eventId,
             _ticketId,
             _refundPercentage,
             _percentageAbsMax,
@@ -198,7 +198,7 @@ contract Marketplace is Managed {
         );
 
         internalRefund(
-            _concertId,
+            _eventId,
             _ticketId,
             _refundPercentage,
             _percentageAbsMax
@@ -207,7 +207,7 @@ contract Marketplace is Managed {
 
     function verifyPurchase(
         address _sender,
-        uint256 _concertId,
+        uint256 _eventId,
         uint256 _resellProfitShare,
         uint256 _percentageAbsMax,
         uint256[SECTION_ROW_SEAT] _seat,
@@ -223,7 +223,7 @@ contract Marketplace is Managed {
         bytes32 hash = keccak256(
             abi.encodePacked(
                 _sender,
-                _concertId,
+                _eventId,
                 _resellProfitShare,
                 _percentageAbsMax,
                 _seat[0],
@@ -245,7 +245,7 @@ contract Marketplace is Managed {
 
     function verifyRefund(
         address _sender,
-        uint256 _concertId,
+        uint256 _eventId,
         uint256 _ticketId,
         uint256 _refundPercentage,
         uint256 _percentageAbsMax,
@@ -260,7 +260,7 @@ contract Marketplace is Managed {
         bytes32 hash = keccak256(
             abi.encodePacked(
                 _sender,
-                _concertId,
+                _eventId,
                 _ticketId,
                 _refundPercentage,
                 _percentageAbsMax
@@ -286,26 +286,26 @@ contract Marketplace is Managed {
             address(management) != address(0) &&
             management.contractRegistry(CONTRACT_MARKETPLACE) != address(0) &&
             management.contractRegistry(CONTRACT_DISTRIBUTOR) != address(0) &&
-            management.contractRegistry(CONTRACT_CONCERT) != address(0)
+            management.contractRegistry(CONTRACT_EVENT) != address(0)
         );
     }
 
     function internalBuyTicketFromOrganizer(
         address _sender,
-        uint256 _concertId,
+        uint256 _eventId,
         uint256 _resellProfitShare,
         uint256 _percentageAbsMax,
         uint256 _initialPrice
     )
         internal
-        requireContractExistsInRegistry(CONTRACT_CONCERT)
+        requireContractExistsInRegistry(CONTRACT_EVENT)
         returns (uint256 _ticketId)
     {
-        Concert concert = Concert(
-            management.contractRegistry(CONTRACT_CONCERT)
+        Event _event = Event(
+            management.contractRegistry(CONTRACT_EVENT)
         );
 
-        Ticket ticket = Ticket(management.ticketRegistry(_concertId));
+        Ticket ticket = Ticket(management.ticketRegistry(_eventId));
 
         ticket.createTicket(
             _sender,
@@ -314,10 +314,10 @@ contract Marketplace is Managed {
             _percentageAbsMax
         );
 
-        concert.sellTicket(_concertId, 1, _initialPrice);
+        _event.sellTicket(_eventId, 1, _initialPrice);
 
         emit TicketPurchased(
-            _concertId,
+            _eventId,
             _ticketId,
             _sender,
             _initialPrice
@@ -325,19 +325,19 @@ contract Marketplace is Managed {
     }
 
     function internalRefund(
-        uint256 _concertId,
+        uint256 _eventId,
         uint256 _ticketId,
         uint256 _refundPercentage,
         uint256 _percentageAbsMax
     )
         internal
-        requireContractExistsInRegistry(CONTRACT_CONCERT)
+        requireContractExistsInRegistry(CONTRACT_EVENT)
     {
-        Concert concert = Concert(
-            management.contractRegistry(CONTRACT_CONCERT)
+        Event _event = Event(
+            management.contractRegistry(CONTRACT_EVENT)
         );
 
-        Ticket ticket = Ticket(management.ticketRegistry(_concertId));
+        Ticket ticket = Ticket(management.ticketRegistry(_eventId));
 
         address ticketOwner;
         uint256 resellProfitShare;
@@ -359,7 +359,7 @@ contract Marketplace is Managed {
             .mul(_refundPercentage)
             .div(_percentageAbsMax);
 
-        concert.refundTicket(_concertId, 1, value);
+        _event.refundTicket(_eventId, 1, value);
 
         if (value > 0){
             ticketOwner.transfer(value);
@@ -367,6 +367,6 @@ contract Marketplace is Managed {
 
         ticket.burnTicket(ticketOwner, _ticketId);
 
-        emit Refund(ticketOwner, _concertId, _ticketId);
+        emit Refund(ticketOwner, _eventId, _ticketId);
     }
 }

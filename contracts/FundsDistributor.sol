@@ -17,7 +17,7 @@ contract FundsDistributor is Managed {
     constructor(address _management) public Managed(_management){}
 
     function distributeResaleFunds(
-        uint256 _concertId,
+        uint256 _eventId,
         uint256 _ticketId
     )
         public
@@ -25,7 +25,7 @@ contract FundsDistributor is Managed {
         requirePermission(CAN_DISTRIBUTE_FUNDS)
         canCallOnlyRegisteredContract(CONTRACT_MARKETPLACE)
     {
-        Ticket ticket = Ticket(management.ticketRegistry(_concertId));
+        Ticket ticket = Ticket(management.ticketRegistry(_eventId));
 
         address ticketOwner;
         uint256 resellProfitShare;
@@ -52,7 +52,7 @@ contract FundsDistributor is Managed {
             .mul(resellProfitShare)
             .div(percentageAbsMax);
 
-        address organizer = management.concertOrganizersRegistry(_concertId);
+        address organizer = management.eventOrganizersRegistry(_eventId);
         organizer.transfer(organizersProfit);
 
         ticketOwner.transfer(resalePrice.sub(organizersProfit));
