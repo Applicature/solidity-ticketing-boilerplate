@@ -1,9 +1,9 @@
 {
-  "name": "smart-contract-templates",
+  "name": "solidity-ticketing-boilerplate",
   "version": "1.0.0",
-  "description": "Smart Contract templates",
-  "homepage": "https://bitbucket.org/applicature/solidity.project-template#readme",
-  "license": "UNLICENSED",
+  "description": "Boilerplate smart contract template for Ticketing industry",
+  "homepage": "https://github.com/Applicature/solidity-ticketing-boilerplate#readme",
+  "license": "Apache-2.0",
   "keywords": [
     "solidity",
     "ethereum",
@@ -12,7 +12,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://bitbucket.org/applicature/solidity.smart-contract-templates.git"
+    "url": "git+https://github.com/Applicature/solidity-ticketing-boilerplate.git"
   },
   "author": "Andrew Zubko <andrew@applicature.com>",
   "engines": {
