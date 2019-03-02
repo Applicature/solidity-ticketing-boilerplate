@@ -7,7 +7,7 @@ const CAN_BURN_TICKETS = 3;
 const CONTRACT_MARKETPLACE = 1;
 
 const Management = artifacts.require("contracts/Management.sol");
-const Ticket = artifacts.require("contracts/Ticket.sol");
+const Ticket = artifacts.require("contracts/EventTicketsRegistry.sol");
 const Concert = artifacts.require("contracts/Event.sol");
 
 contract("Ticket", accounts => {

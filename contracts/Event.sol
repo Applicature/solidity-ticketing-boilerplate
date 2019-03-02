@@ -1,7 +1,7 @@
 pragma solidity ^0.4.24;
 
 import "./Managed.sol";
-import "./Ticket.sol";
+import "./EventTicketsRegistry.sol";
 
 
 contract Event is Managed {
@@ -73,6 +73,8 @@ contract Event is Managed {
 
         events[_eventId].ticketsAmount = _ticketsAmount;
         events[_eventId].startTime = _startTime;
+
+        //@TODO: emit EventUpdated
     }
 
     function sellTicket(
@@ -131,6 +133,7 @@ contract Event is Managed {
             ERROR_NOT_AVAILABLE
         );
 
+        // @TODO: define separate structure variable to specify withdrawn funds
         events[_eventId].collectedFunds = 0;
     }
 
@@ -145,6 +148,7 @@ contract Event is Managed {
         );
     }
 
+    // @TODO: rename to getEventsCount
     function getEventsAmount()
         public
         view

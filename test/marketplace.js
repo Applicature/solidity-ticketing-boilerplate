@@ -16,7 +16,7 @@ const CONTRACT_MARKETPLACE = 1;
 const CONTRACT_DISTRIBUTOR = 2;
 
 const Management = artifacts.require("contracts/Management.sol");
-const Ticket = artifacts.require("contracts/Ticket.sol");
+const Ticket = artifacts.require("contracts/EventTicketsRegistry.sol");
 const Event = artifacts.require("contracts/tests/EventTest.sol");
 const Distributor = artifacts.require("contracts/FundsDistributor.sol");
 const Marketplace = artifacts.require("contracts/Marketplace.sol");

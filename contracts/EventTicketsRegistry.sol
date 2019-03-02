@@ -4,7 +4,7 @@ import "openzeppelin-solidity/contracts/token/ERC721/ERC721Token.sol";
 import "./Managed.sol";
 
 
-contract Ticket is ERC721Token, Managed {
+contract EventTicketsRegistry is ERC721Token, Managed {
 
     struct TicketDetails {
         uint256 resellProfitShare;
@@ -71,6 +71,8 @@ contract Ticket is ERC721Token, Managed {
             ERROR_ACCESS_DENIED
         );
 
+        // @TODO: validate that ticket was sold = or more than resalePrice
+
         _previousTicketOwner = ownerOf(_ticketId);
 
         removeTokenFrom(_previousTicketOwner, _ticketId);
@@ -89,6 +91,7 @@ contract Ticket is ERC721Token, Managed {
     {
         require(
             ownerOf(_ticketId) == msg.sender &&
+        // @TODO: lets remove condition that resale price should be more than initial price
             (_resalePrice == 0 || _resalePrice > ticketsDetails[_ticketId].previousPrice),
             ERROR_INVALID_INPUT
         );

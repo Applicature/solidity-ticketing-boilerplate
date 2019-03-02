@@ -2,7 +2,7 @@ pragma solidity ^0.4.23;
 
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "./Managed.sol";
-import "./Ticket.sol";
+import "./EventTicketsRegistry.sol";
 
 
 contract FundsDistributor is Managed {
@@ -25,7 +25,8 @@ contract FundsDistributor is Managed {
         requirePermission(CAN_DISTRIBUTE_FUNDS)
         canCallOnlyRegisteredContract(CONTRACT_MARKETPLACE)
     {
-        Ticket ticket = Ticket(management.ticketRegistry(_eventId));
+        EventTicketsRegistry ticketsRegistry =
+            EventTicketsRegistry(management.ticketRegistry(_eventId));
 
         address ticketOwner;
         uint256 resellProfitShare;
@@ -41,8 +42,9 @@ contract FundsDistributor is Managed {
             initialPrice,
             previousPrice,
             resalePrice
-        ) = ticket.getTicket(_ticketId);
+        ) = ticketsRegistry.getTicket(_ticketId);
 
+        // @TODO: move condition to marketplace logic or to event logic
         require(
             resalePrice == msg.value,
             ERROR_NOT_AVAILABLE

@@ -2,7 +2,7 @@ pragma solidity ^0.4.24;
 
 import "./Managed.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
-import "./Ticket.sol";
+import "./EventTicketsRegistry.sol";
 import "./Event.sol";
 import "./FundsDistributor.sol";
 
@@ -56,8 +56,9 @@ contract Marketplace is Managed {
             ERROR_NOT_AVAILABLE
         );
 
-        msg.sender.transfer(value);
         _event.withdrawCollectedFunds(_eventId);
+
+        msg.sender.transfer(value);
     }
 
     function addNewEvent(
@@ -76,9 +77,12 @@ contract Marketplace is Managed {
 
         uint256 _eventId = _event.createEvent(_ticketsAmount, _startTime);
 
-        Ticket ticket = new Ticket(management, _name, _symbol);
+        EventTicketsRegistry eventTicketRegistry =
+            new EventTicketsRegistry(management, _name, _symbol);
 
-        management.registerNewEvent(_eventId, msg.sender, address(ticket));
+        management.registerNewEvent(
+            _eventId, msg.sender, address(eventTicketRegistry)
+        );
     }
 
     function buyTicketFromOrganizer(
@@ -150,7 +154,8 @@ contract Marketplace is Managed {
             _ticketId
         );
 
-        Ticket ticket = Ticket(management.ticketRegistry(_eventId));
+        EventTicketsRegistry ticket =
+            EventTicketsRegistry(management.ticketRegistry(_eventId));
 
         address previousOwner = ticket.resellTicket(_ticketId, msg.sender);
 
@@ -305,13 +310,15 @@ contract Marketplace is Managed {
             management.contractRegistry(CONTRACT_EVENT)
         );
 
-        Ticket ticket = Ticket(management.ticketRegistry(_eventId));
+        EventTicketsRegistry ticket =
+            EventTicketsRegistry(management.ticketRegistry(_eventId));
 
         ticket.createTicket(
             _sender,
             _initialPrice,
             _resellProfitShare,
             _percentageAbsMax
+        // @TODO: pass information about seat location
         );
 
         _event.sellTicket(_eventId, 1, _initialPrice);
@@ -321,6 +328,7 @@ contract Marketplace is Managed {
             _ticketId,
             _sender,
             _initialPrice
+        // @TODO: pass information about seat location
         );
     }
 
@@ -337,7 +345,8 @@ contract Marketplace is Managed {
             management.contractRegistry(CONTRACT_EVENT)
         );
 
-        Ticket ticket = Ticket(management.ticketRegistry(_eventId));
+        EventTicketsRegistry ticket =
+            EventTicketsRegistry(management.ticketRegistry(_eventId));
 
         address ticketOwner;
         uint256 resellProfitShare;
